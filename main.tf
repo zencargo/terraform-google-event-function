@@ -85,7 +85,7 @@ data "google_project" "nums" {
 }
 
 data "google_project" "default" {
-  count      = length(var.secret_environment_variables) > 0 ? 1 : 0
+  count      = length(var.secret_environment_variables) > 0 || length(var.secret_volumes) > 0 ? 1 : 0
   project_id = var.project_id
 }
 
@@ -122,6 +122,24 @@ resource "google_cloudfunctions_function" "main" {
       project_id = try(data.google_project.nums[secret_environment_variables.value["project_id"]].number, data.google_project.default[0].number)
       secret     = secret_environment_variables.value["secret_name"]
       version    = lookup(secret_environment_variables.value, "version", "latest")
+    }
+  }
+
+  dynamic "secret_volumes" {
+    for_each = { for item in var.secret_volumes : item.mount_path => item }
+
+    content {
+      mount_path = secret_volumes.value["mount_path"]
+      project_id = try(data.google_project.nums[secret_volumes.value["project_id"]].number, data.google_project.default[0].number)
+      secret     = secret_volumes.value["secret_name"]
+      dynamic "versions" {
+        for_each = { for version in coalesce(secret_volumes.value["versions"], []) : version.path => version }
+
+        content {
+          path    = versions.value["path"]
+          version = versions.value["version"]
+        }
+      }
     }
   }
 

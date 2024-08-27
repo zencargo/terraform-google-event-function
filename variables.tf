@@ -87,6 +87,20 @@ variable "secret_environment_variables" {
   description = "A list of maps which contains key, project_id, secret_name (not the full secret id) and version to assign to the function as a set of secret environment variables."
 }
 
+variable "secret_volumes" {
+  type = list(object({
+    mount_path  = string
+    project_id  = optional(string)
+    secret_name = string
+    versions = optional(list(object({
+      path : string
+      version : string
+    })))
+  }))
+  default     = []
+  description = "A list of objects which contains mount_path, project_id, secret_name (not the full secret id) and versions to pass to the function as a set files mounted in function filesystem"
+}
+
 variable "source_directory" {
   type        = string
   description = "The pathname of the directory which contains the function source code."
